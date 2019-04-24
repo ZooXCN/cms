@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
  * 发送方将消息发送给交换机exchange，不和queue进行交互，所以不需要配置队列queue
  **/
 @Configuration
-public class RabbitmqConfig {//
+public class RabbitmqConfig {
 
     //交换机的名称
     public static final String EX_ROUTING_CMS_POSTPAGE="ex_routing_cms_postpage";

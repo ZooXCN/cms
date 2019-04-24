@@ -4,7 +4,6 @@ import com.github.pagehelper.Page;
 import com.xuecheng.framework.domain.course.CourseBase;
 import com.xuecheng.framework.domain.course.ext.CategoryNode;
 import com.xuecheng.framework.domain.course.ext.CourseInfo;
-import com.xuecheng.framework.domain.course.ext.TeachplanNode;
 import com.xuecheng.framework.domain.course.request.CourseListRequest;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Repository;
@@ -14,15 +13,11 @@ import org.springframework.stereotype.Repository;
  */
 @Mapper
 @Repository
-public interface CourseMapper {
+public interface CategoryMapper {
 
-   CourseBase findCourseBaseById(String id);
-
-   /**
-    * 课程分页查询
-    * @param courseListRequest
+    /**
+     * 课程分类
     * @return
-    */
-   Page<CourseInfo> findCourseListPage(CourseListRequest courseListRequest);
-
+     */
+   public CategoryNode findList();
 }
