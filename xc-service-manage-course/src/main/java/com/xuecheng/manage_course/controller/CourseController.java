@@ -97,6 +97,12 @@ public class CourseController implements CourseControllerApi {
         return courseService.getCourseMarketById(courseId);
     }
 
+    /**
+     * 修改课程营销信息
+     * @param id
+     * @param courseMarket
+     * @return
+     */
     @Override
     @PostMapping("/coursemarket/update/{id}")
     public ResponseResult updateCourseMarket(@PathVariable("id") String id, @RequestBody CourseMarket courseMarket) {
@@ -105,6 +111,21 @@ public class CourseController implements CourseControllerApi {
             return new ResponseResult(CommonCode.FAIL);
         }
         return new ResponseResult(CommonCode.SUCCESS);
+    }
+
+    /**
+     * 保存课程图片
+     * @param courseId
+     * @param pic
+     * @return
+     */
+    @Override
+    @PostMapping("/coursepic/add")
+    public ResponseResult addCoursePic(@RequestParam("courseId") String courseId,
+
+
+                                       @RequestParam("pic") String pic) {
+        return courseService.saveCoursePic(courseId,pic);
     }
 
 
