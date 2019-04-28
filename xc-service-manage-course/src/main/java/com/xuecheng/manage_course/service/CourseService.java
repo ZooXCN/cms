@@ -47,6 +47,8 @@ public class CourseService {
     @Autowired
     private  CoursePicRepository coursePicRepository;
 
+
+
     public TeachplanNode findTeachplanList(String courseId) {
 
         TeachplanNode teachplanNode = teachplanMapper.selectList(courseId);

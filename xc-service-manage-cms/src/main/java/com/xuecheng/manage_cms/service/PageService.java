@@ -6,18 +6,22 @@ import com.mongodb.client.gridfs.GridFSDownloadStream;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.gridfs.GridFS;
 import com.xuecheng.framework.domain.cms.CmsPage;
+import com.xuecheng.framework.domain.cms.CmsSite;
 import com.xuecheng.framework.domain.cms.CmsTemplate;
 import com.xuecheng.framework.domain.cms.request.QueryPageRequest;
 import com.xuecheng.framework.domain.cms.response.CmsCode;
 import com.xuecheng.framework.domain.cms.response.CmsPageResult;
+import com.xuecheng.framework.domain.cms.response.CmsPostPageResult;
 import com.xuecheng.framework.exception.CustomException;
 import com.xuecheng.framework.exception.ExceptionCast;
 import com.xuecheng.framework.model.response.CommonCode;
 import com.xuecheng.framework.model.response.QueryResponseResult;
 import com.xuecheng.framework.model.response.QueryResult;
 import com.xuecheng.framework.model.response.ResponseResult;
+import com.xuecheng.manage_cms.client.CmsPageClient;
 import com.xuecheng.manage_cms.config.RabbitmqConfig;
 import com.xuecheng.manage_cms.dao.CmsPageRepository;
+import com.xuecheng.manage_cms.dao.CmsSiteRepository;
 import com.xuecheng.manage_cms.dao.CmsTemplateRepository;
 import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
@@ -58,6 +62,11 @@ public class PageService {
     private GridFSBucket gridFSBucket;
     @Autowired
     private RabbitTemplate rabbitTemplate;
+    @Autowired
+    private CmsSiteRepository cmsSiteRepository;
+
+    @Autowired
+    private CmsPageClient cmsPageClient;
 
     /**
      * 分页查询
@@ -330,7 +339,7 @@ public class PageService {
      * @param pageId
      * @return
      */
-    public ResponseResult postPage(String pageId)  {
+    public ResponseResult postPage(String pageId) {
 
         //执行页面静态化
         String pageHtml = null;
@@ -357,8 +366,8 @@ public class PageService {
         if (cmsPage == null) {//页面不存在，参数非法
             ExceptionCast.cast(CommonCode.INVALID_PARAM);
         }
-        Map<String,String> map = new HashMap<>();
-        map.put("pageId",pageId);
+        Map<String, String> map = new HashMap<>();
+        map.put("pageId", pageId);
         String message = JSON.toJSONString(map);
         //获取站点id,routingKey
         String siteId = cmsPage.getSiteId();
@@ -393,5 +402,54 @@ public class PageService {
         cmsPage.setHtmlFileId(objectId.toHexString());
         cmsPageRepository.save(cmsPage);
         return cmsPage;
+    }
+
+    /**
+     * 页面一键发布
+     *
+     * @param cmsPage
+     * @return
+     */
+    public CmsPostPageResult postPageQuick(CmsPage cmsPage) {
+        //添加页面到cms_Pages数据表中
+        CmsPageResult cmsPageAdd = this.add(cmsPage);
+        if (!cmsPageAdd.isSuccess()) {//页面添加失败
+            return new CmsPostPageResult(CommonCode.FAIL, null);
+        }
+        //获取CmsPage
+        CmsPage cmsPage1 = cmsPageAdd.getCmsPage();
+        //获取CmsPag页面的id
+        String pageId = cmsPage1.getPageId();
+        //根据页面id进行页面的发布(1、页面静态化 2、保存页面到GridFS 3、通过MQ发送消息)
+        ResponseResult responseResult = this.postPage(pageId);
+        if (!responseResult.isSuccess()) {//页面发布失败
+            return new CmsPostPageResult(CommonCode.FAIL, null);
+        }
+        //获取pageUtl
+
+        //获取site站点
+        CmsSite cmsSite = this.findCmsSiteById(cmsPage1.getSiteId());
+        if (cmsSite == null) {//站点不存在
+            ExceptionCast.cast(CmsCode.CMS_SITEINFO_NOTEXISTS);
+        }
+        //获取PageUrl 页面url=站点域名+站点webpath+页面webpath+页面名称
+        String pageUrl = cmsSite.getSiteDomain() + cmsSite.getSiteWebPath() + cmsPage1.getPageWebPath() + cmsPage1.getPageName();
+
+        return new CmsPostPageResult(CommonCode.SUCCESS, pageUrl);
+    }
+
+    /**
+     * 根据siteId查询站点信息
+     *
+     * @param siteId
+     * @return
+     */
+    public CmsSite findCmsSiteById(String siteId) {
+        Optional<CmsSite> optional = cmsSiteRepository.findById(siteId);
+        if (optional.isPresent()) {
+            CmsSite cmsSite = optional.get();
+            return cmsSite;
+        }
+        return null;
     }
 }
